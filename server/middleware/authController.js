@@ -1,14 +1,21 @@
 import jwt from "jsonwebtoken";
+import env from "../config.js"
+import Admin from "../model/admin.model.js";
+import User from "../model/user.model.js";
 
-export const authenticateToken = (req, res, next) => {
-    const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
+export const authenticateToken = async(req, res, next) => {
 
+    const token = req.headers.authorization.split(" ")[1]
     if (!token) {
         return res.status(401).json({ message: "Access denied, token missing" });
     }
 
     try {
-        const decoded = jwt.verify(token, "usdzvsedhu9swdivewdawevdiawked");
+        const decoded = jwt.verify(token, env.JWT_SECRET);
+        console.log(decoded)
+        const { _id } = decoded;
+        const oldUser = await User.findOne({ _id })
+        if(!oldUser)   return res.status(404).send("token error")
         req.user = decoded;
         next();
     } catch (error) {
@@ -16,17 +23,17 @@ export const authenticateToken = (req, res, next) => {
     }
 };
 
-
-export const authenticateAdmin = (req, res, next) => {
-    const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
-
+export const authenticateAdmin = async (req, res, next) => {
+    const token = req.headers.authorization.split(" ")[1]
     if (!token) {
         return res.status(401).json({ message: "Access denied, token missing" });
     }
 
     try {
-        const decoded = jwt.verify(token, "jhdweudhuweigdiwfegd87t3e62ye3y2qeq");
-        if (!decoded.isAdmin) {
+        const decoded = jwt.verify(token, env.JWT_SECRET);
+        const { _id } = decoded;
+        const oldAdmin = await Admin.findOne({ _id })
+        if (!oldAdmin.isAdmin) {
             return res.status(403).json({ message: "Access denied, not an admin" });
         }
         req.admin = decoded;

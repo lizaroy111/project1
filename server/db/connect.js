@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import ENV from '../config.js'
 
-const DB = `mongodb+srv://${ENV.MONGO_USER}:${ENV.MONGO_PASS}@cluster0.1eiza.mongodb.net/Contact?retryWrites=true&w=majority`
+const DB = `mongodb+srv://${ENV.MONGO_USER}:${ENV.MONGO_PASS}@aus.itwbo.mongodb.net/Contact?retryWrites=true&w=majority`
 
 const connect = async () => {
   const database = await mongoose.connect(DB, {

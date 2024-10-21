@@ -1,5 +1,7 @@
-import Admin from "../models/Admin.js";
+import JWT from "jsonwebtoken";
+import Admin from "../model/admin.model.js";
 import bcrypt from "bcryptjs";
+import env from "../config.js"
 
 // Create a new admin
 export const createAdmin = async (req, res) => {
@@ -58,5 +60,31 @@ export const deleteAdmin = async (req, res) => {
         res.status(200).json({ message: "Admin deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: "Error deleting admin", error: error.message });
+    }
+};
+
+
+export const adminLogin = async (req, res) => {
+    try {
+        const { adminId, password } = req.body;
+        if (!adminId || !password) {
+            return res.status(400).send("Missing attributes");
+        }
+
+        const oldAdmin = await Admin.findOne({ adminId });
+        if (!oldAdmin) {
+            return res.status(404).send("No admin found");
+        }
+
+        const passwordMatch = await bcrypt.compare(password, oldAdmin.password);
+        if (!passwordMatch) {
+            return res.status(401).send("Invalid credentials");
+        }
+
+        const token = JWT.sign({ adminId, _id: oldAdmin._id, password }, env.JWT_SECRET, { expiresIn: '1h' });
+        return res.status(200).json({ token });
+    } catch (error) {
+        console.error("Login error:", error);
+        return res.status(500).send("Internal Server Error");
     }
 };
