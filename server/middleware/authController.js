@@ -4,7 +4,7 @@ import Admin from "../model/admin.model.js";
 import User from "../model/user.model.js";
 
 export const authenticateToken = async(req, res, next) => {
-
+    if(!req.headers.authorization)  return res.status(404).send("Token not found")
     const token = req.headers.authorization.split(" ")[1]
     if (!token) {
         return res.status(401).json({ message: "Access denied, token missing" });
@@ -24,6 +24,7 @@ export const authenticateToken = async(req, res, next) => {
 };
 
 export const authenticateAdmin = async (req, res, next) => {
+    if(!req.headers.authorization)  return res.status(404).send("Token not found")
     const token = req.headers.authorization.split(" ")[1]
     if (!token) {
         return res.status(401).json({ message: "Access denied, token missing" });

@@ -82,9 +82,30 @@ export const adminLogin = async (req, res) => {
         }
 
         const token = JWT.sign({ adminId, _id: oldAdmin._id, password }, env.JWT_SECRET, { expiresIn: '1h' });
+        console.log(adminId)
         return res.status(200).json({ token });
     } catch (error) {
         console.error("Login error:", error);
         return res.status(500).send("Internal Server Error");
+    }
+};
+
+export const decodeAdmin = async (req, res) => {
+    if (!req.body.token) return res.status(404).send("JWT not found")
+    const token = req.body.token.split(" ")[1]
+    if (!token) {
+        return res.status(401).json({ message: "Access denied, token missing" });
+    }
+
+    try {
+        const decoded = JWT.verify(token, env.JWT_SECRET);
+        const { _id } = decoded;
+        const oldAdmin = await Admin.findOne({ _id })
+        if (!oldAdmin.isAdmin) {
+            return res.status(403).json({ message: "Access denied, not an admin" });
+        }
+        return res.status(200).send(decoded)
+    } catch (error) {
+        res.status(401).json({ message: "Invalid token" });
     }
 };

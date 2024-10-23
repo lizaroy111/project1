@@ -61,6 +61,12 @@ const UserSchema = new mongoose.Schema({
         required: [true, "Registration number is required"],
         unique: true,
     },
+    current_sem:{
+        type:Number,
+        enum:[1,2,3,4,5,6,7,8],
+        default:1,
+        required:true
+    },
     subjects: {
         type: [SemesterSchema],
         default: [],
