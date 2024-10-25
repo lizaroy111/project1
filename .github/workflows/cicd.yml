@@ -1,0 +1,71 @@
+name: Deploy MERN Application
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # Build job for both client and server
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      
+      - name: Log in to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      # Build Docker image for the server
+      - name: Build Docker Image for Server
+        run: docker build -t akashgrowmore/aus-liza-nodejs -f ./server/Dockerfile ./server
+
+      # Push server image to Docker Hub
+      - name: Publish Server Image to Docker Hub
+        run: docker push akashgrowmore/aus-liza-nodejs:latest
+
+      # Build Docker image for the client
+      - name: Build Docker Image for Client
+        run: docker build -t akashgrowmore/aus-liza-react:latest --build-arg REACT_APP_NODE_ENV='production' --build-arg REACT_APP_SERVER_BASE_URL='${{ secrets.REACT_APP_SERVER_BASE_URL }}' -f ./client/Dockerfile ./client
+
+      # Push client image to Docker Hub
+      - name: Publish Client Image to Docker Hub
+        run: docker push akashgrowmore/aus-liza-react:latest
+
+  # Deploy job for both client and server
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Log in to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      # Pull the latest server image from Docker Hub
+      - name: Pull Server Image from Docker Hub
+        run: docker pull akashgrowmore/aus-liza-nodejs:latest
+
+      # Delete old server container if it exists
+      - name: Delete Old Server Container
+        run: docker rm -f aus-liza-nodejs-container || true
+
+      # Run the server container
+      - name: Run Server Container
+        run: docker run -d -p 3001:3001 --name aus-liza-nodejs-container -e MONGO_PASS='${{ secrets.MONGO_PASS }}' -e MONGO_USER="${{ secrets.MONGO_USER }}" akashgrowmore/aus-liza-nodejs:latest
+
+      # Pull the latest client image from Docker Hub
+      - name: Pull Client Image from Docker Hub
+        run: docker pull akashgrowmore/aus-liza-react:latest
+
+      # Delete old client container if it exists
+      - name: Delete Old Client Container
+        run: docker rm -f aus-liza-react-container || true
+
+      # Run the client container
+      - name: Run Client Container
+        run: docker run -d -p 3000:80 --name aus-liza-react-container akashgrowmore/aus-liza-react:latest
